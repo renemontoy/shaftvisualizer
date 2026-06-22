@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PXG Shaft Visualizer</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.8.1/nouislider.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.8.1/nouislider.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --bg:       #0a0a0c;
+    --surface:  #111114;
+    --border:   #2a2a32;
+    --border2:  #3a3a45;
+    --accent:   #c8102e;
+    --accent2:  #ff3b55;
+    --silver:   #b8bcc8;
+    --text:     #e8e8f0;
+    --muted:    #7a7a8a;
+    --radius:   10px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 20px 32px;
+    background: linear-gradient(180deg, #161618 0%, #0d0d0f 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-logo {
+    width: 36px;
+    height: 36px;
+    background: #2a2a32;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .header h1 {
+    margin: 0;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 4px;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+  .internal-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 3px 8px;
+  }
+  .header-sub {
+    margin-left: auto;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* ── FILTER CARD ── */
+  .filter-card {
+    margin: 16px 20px;
+    padding: 18px 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .controls {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  /* ── FIELD BASE ── */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .field label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+  }
+
+  input[type="text"], select {
+    background: #0d0d10;
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    height: 36px;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  input[type="text"]:focus,
+  select:focus { border-color: var(--accent); }
+
+  #search { width: 180px; }
+
+  select { 
+    width: 140px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a7a8a'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+    cursor: pointer;
+  }
+
+  select option { background: #111114; }
+
+  /* ── WEIGHT SLIDER ── */
+  .field.weight-field { min-width: 180px; }
+
+  .slider-track-wrap {
+    padding: 4px 0 2px;
+    height: 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  #weightSlider {
+    width: 100%;
+  }
+
+  /* noUiSlider overrides */
+  .noUi-target {
+    background: #0d0d10;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    box-shadow: none;
+    height: 6px;
+  }
+  .noUi-connect { background: var(--accent); }
+  .noUi-handle {
+    width: 16px !important;
+    height: 16px !important;
+    right: -8px !important;
+    top: -6px !important;
+    border-radius: 50% !important;
+    background: var(--silver) !important;
+    border: 2px solid var(--accent) !important;
+    box-shadow: none !important;
+    cursor: pointer;
+  }
+  .noUi-handle::before, .noUi-handle::after { display: none !important; }
+  .noUi-tooltip { display: none; }
+
+  #weightLabel {
+    font-size: 11px;
+    color: var(--silver);
+    font-weight: 500;
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+
+  /* ── PLOT CARD ── */
+  .plot-card {
+    margin: 0 20px 20px;
+    padding: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  #plot { height: 820px; }
+
+  /* ── TRENDLINE TOGGLE ── */
+  .toggle-btn {
+    height: 36px;
+    padding: 0 14px;
+    background: #0d0d10;
+    color: var(--muted);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .toggle-btn:hover { border-color: var(--accent); color: var(--text); }
+  .toggle-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* ── DIVIDER between filter groups ── */
+  .field-divider {
+    width: 1px;
+    height: 36px;
+    background: var(--border);
+    align-self: flex-end;
+    margin: 0 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">PXG</div>
+  <h1>Shaft Visualizer</h1>
+  <span class="internal-badge">For Internal Use Only</span>
+  <span class="header-sub">Fitting Resource</span>
+</div>
+
+<div class="filter-card">
+  <div class="controls">
+    <div class="field">
+      <label>Search</label>
+      <input type="text" id="search" placeholder="Manufacturer or model…">
+    </div>
+
+    <div class="field-divider"></div>
+
+    <div class="field">
+      <label>Shaft Type</label>
+      <select id="type">
+        <option>All</option>
+        <option>Iron</option>
+        <option>Hybrid</option>
+        <option>Wood</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Flex</label>
+      <select id="flex">
+        <option>All</option>
+        <option>L</option>
+        <option>A</option>
+        <option>R</option>
+        <option>S</option>
+        <option>X</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Tier</label>
+      <select id="tier"></select>
+    </div>
+
+    <div class="field-divider"></div>
+
+    <div class="field">
+      <label>Trendline</label>
+      <button id="trendlineToggle" class="toggle-btn" onclick="toggleTrendline()">Show Trendline</button>
+    </div>
+
+    <div class="field-divider"></div>
+
+    <div class="field weight-field">
+      <label>Weight Range</label>
+      <div class="slider-track-wrap">
+        <div id="weightSlider"></div>
+      </div>
+      <div id="weightLabel"></div>
+    </div>
+  </div>
+</div>
+
+<div class="plot-card">
+  <div id="plot"></div>
+</div>
+
+<script>
+const data=[{"Manufacturer": "Project X", "Model": "Denali Silver 50i", "Type": "Graphite", "Weight": 50, "Flex": "L", "Butt_Frequency": 244, "Tip_Frequency": 262, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 40i", "Type": "Graphite", "Weight": 40, "Flex": "L", "Butt_Frequency": 244, "Tip_Frequency": 266, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "KBS", "Model": "Max Graphite  ", "Type": "Graphite", "Weight": 45, "Flex": "L", "Butt_Frequency": 245, "Tip_Frequency": 252, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "UST", "Model": "Recoil DART 55", "Type": "Graphite", "Weight": 55, "Flex": "L", "Butt_Frequency": 246, "Tip_Frequency": 270, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Mitsubishi", "Model": "MMT 50 ", "Type": "Graphite", "Weight": 50, "Flex": "L", "Butt_Frequency": 247, "Tip_Frequency": 260, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Accra", "Model": "iSeries 50i", "Type": "Graphite", "Weight": 50, "Flex": "L", "Butt_Frequency": 255, "Tip_Frequency": 255, "Availability": "1", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "1"}, {"Manufacturer": "KBS", "Model": "Max Graphite ", "Type": "Graphite", "Weight": 55, "Flex": "A", "Butt_Frequency": 256, "Tip_Frequency": 262, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 50i", "Type": "Graphite", "Weight": 50, "Flex": "A", "Butt_Frequency": 259, "Tip_Frequency": 277, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Accra", "Model": "iSeries 60i", "Type": "Graphite", "Weight": 60, "Flex": "A", "Butt_Frequency": 260, "Tip_Frequency": 260, "Availability": "1", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "Denali Silver 60i", "Type": "Graphite", "Weight": 60, "Flex": "A", "Butt_Frequency": 261, "Tip_Frequency": 277, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Mitsubishi", "Model": "MMT 60 ", "Type": "Graphite", "Weight": 60, "Flex": "A", "Butt_Frequency": 262, "Tip_Frequency": 268, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "UST", "Model": "Recoil DART 65", "Type": "Graphite", "Weight": 65, "Flex": "A", "Butt_Frequency": 263, "Tip_Frequency": 288, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Aerotech", "Model": "Private Reserve Steelfiber 60", "Type": "Graphite", "Weight": 60, "Flex": "A", "Butt_Frequency": 270, "Tip_Frequency": 270, "Availability": "1", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "Denali Silver 70i", "Type": "Graphite", "Weight": 70, "Flex": "R", "Butt_Frequency": 272, "Tip_Frequency": 275, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "KBS", "Model": "Max Graphite ", "Type": "Graphite", "Weight": 65, "Flex": "R", "Butt_Frequency": 272, "Tip_Frequency": 278, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Accra", "Model": "iSeries 70i", "Type": "Graphite", "Weight": 70, "Flex": "R", "Butt_Frequency": 273, "Tip_Frequency": 275, "Availability": "1", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 60i", "Type": "Graphite", "Weight": 60, "Flex": "R", "Butt_Frequency": 273, "Tip_Frequency": 276, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "UST", "Model": "Recoil DART 75", "Type": "Graphite", "Weight": 75, "Flex": "R", "Butt_Frequency": 275, "Tip_Frequency": 291, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "KBS", "Model": "TGI 70 ", "Type": "Graphite", "Weight": 70, "Flex": "R", "Butt_Frequency": 275, "Tip_Frequency": 292, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Aerotech", "Model": "Private Reserve Steelfiber 70", "Type": "Graphite", "Weight": 70, "Flex": "R", "Butt_Frequency": 276, "Tip_Frequency": 285, "Availability": "1", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "1"}, {"Manufacturer": "Mitsubishi", "Model": "MMT 70 ", "Type": "Graphite", "Weight": 70, "Flex": "R", "Butt_Frequency": 278, "Tip_Frequency": 278, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Aerotech", "Model": "Private Reserve Steelfiber 95", "Type": "Graphite", "Weight": 95, "Flex": "R", "Butt_Frequency": 280, "Tip_Frequency": 287, "Availability": "1", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "Denali Silver 80i", "Type": "Graphite", "Weight": 80, "Flex": "S", "Butt_Frequency": 282, "Tip_Frequency": 280, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "KBS", "Model": "TGI 80 ", "Type": "Graphite", "Weight": 80, "Flex": "S", "Butt_Frequency": 282, "Tip_Frequency": 302, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Aerotech", "Model": "Private Reserve 95", "Type": "Graphite", "Weight": 95, "Flex": "S", "Butt_Frequency": 283, "Tip_Frequency": 290, "Availability": "1", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "1"}, {"Manufacturer": "Accra", "Model": "iSeries 80i", "Type": "Graphite", "Weight": 80, "Flex": "S", "Butt_Frequency": 285, "Tip_Frequency": 287, "Availability": "1", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "1"}, {"Manufacturer": "Mitsubishi", "Model": "MMT 80 ", "Type": "Graphite", "Weight": 80, "Flex": "S", "Butt_Frequency": 286, "Tip_Frequency": 280, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Aerotech", "Model": "Private Reserve 110", "Type": "Graphite", "Weight": 110, "Flex": "S", "Butt_Frequency": 286, "Tip_Frequency": 287, "Availability": "1", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "1"}, {"Manufacturer": "UST", "Model": "Recoil DART 75", "Type": "Graphite", "Weight": 75, "Flex": "S", "Butt_Frequency": 287, "Tip_Frequency": 297, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Mitsubishi", "Model": "MMT 105", "Type": "Graphite", "Weight": 105, "Flex": "S", "Butt_Frequency": 290, "Tip_Frequency": 310, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Denali Silver 105i", "Type": "Graphite", "Weight": 105, "Flex": "S", "Butt_Frequency": 291, "Tip_Frequency": 282, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Mitsubishi", "Model": "MMT 125", "Type": "Graphite", "Weight": 125, "Flex": "X", "Butt_Frequency": 304, "Tip_Frequency": 345, "Availability": "Stock", "Description": 1, "ShaftType": "Graphite Iron", "Tier": "Stock"}, {"Manufacturer": "Accra", "Model": "iSeries 50i Hybrid", "Type": "Hybrid", "Weight": 50, "Flex": "L", "Butt_Frequency": 205, "Tip_Frequency": 205, "Availability": "1", "Description": 1, "ShaftType": "Hybrid", "Tier": "1"}, {"Manufacturer": "Mitsubishi", "Model": "MMT 50 Hybrid", "Type": "Hybrid", "Weight": 50, "Flex": "L", "Butt_Frequency": 210, "Tip_Frequency": 218, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 40i Hybrid", "Type": "Hybrid", "Weight": 40, "Flex": "L", "Butt_Frequency": 215, "Tip_Frequency": 212, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Accra", "Model": "iSeries 60i Hybrid", "Type": "Hybrid", "Weight": 60, "Flex": "A", "Butt_Frequency": 215, "Tip_Frequency": 215, "Availability": "1", "Description": 1, "ShaftType": "Hybrid", "Tier": "1"}, {"Manufacturer": "Mitsubishi", "Model": "MMT 60 Hybrid", "Type": "Hybrid", "Weight": 60, "Flex": "A", "Butt_Frequency": 220, "Tip_Frequency": 228, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 50i Hybrid", "Type": "Hybrid", "Weight": 50, "Flex": "A", "Butt_Frequency": 225, "Tip_Frequency": 235, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD-IZ 65 Hybrid", "Type": "Hybrid", "Weight": 60, "Flex": "A", "Butt_Frequency": 230, "Tip_Frequency": 235, "Availability": "2", "Description": 1, "ShaftType": "Hybrid", "Tier": "2"}, {"Manufacturer": "Mitsubishi", "Model": "MMT 70 Hybrid", "Type": "Hybrid", "Weight": 70, "Flex": "R", "Butt_Frequency": 230, "Tip_Frequency": 238, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 60i Hybrid", "Type": "Hybrid", "Weight": 60, "Flex": "R", "Butt_Frequency": 232, "Tip_Frequency": 227, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Accra", "Model": "iSeries 70i Hybrid", "Type": "Hybrid", "Weight": 70, "Flex": "R", "Butt_Frequency": 232, "Tip_Frequency": 228, "Availability": "1", "Description": 1, "ShaftType": "Hybrid", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "Denali Frost Blue 70 Hybrid", "Type": "Hybrid", "Weight": 80, "Flex": "R", "Butt_Frequency": 233, "Tip_Frequency": 238, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "KBS", "Model": "TGI 70 Hybrid", "Type": "Hybrid", "Weight": 70, "Flex": "R", "Butt_Frequency": 235, "Tip_Frequency": 234, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Ventus Blue 60 Hybrid", "Type": "Hybrid", "Weight": 60, "Flex": "R", "Butt_Frequency": 237, "Tip_Frequency": 256, "Availability": "3", "Description": 1, "ShaftType": "Hybrid", "Tier": "3"}, {"Manufacturer": "Accra", "Model": "iSeries 80i Hybrid", "Type": "Hybrid", "Weight": 80, "Flex": "S", "Butt_Frequency": 240, "Tip_Frequency": 238, "Availability": "1", "Description": 1, "ShaftType": "Hybrid", "Tier": "1"}, {"Manufacturer": "Mitsubishi", "Model": "MMT 80 Hybrid", "Type": "Hybrid", "Weight": 80, "Flex": "S", "Butt_Frequency": 240, "Tip_Frequency": 248, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "KBS", "Model": "TGI 80 Hybrid", "Type": "Hybrid", "Weight": 80, "Flex": "S", "Butt_Frequency": 245, "Tip_Frequency": 240, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Denali Frost Blue 70 Hybrid", "Type": "Hybrid", "Weight": 80, "Flex": "S", "Butt_Frequency": 247, "Tip_Frequency": 250, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD-IZ 75 Hybrid", "Type": "Hybrid", "Weight": 70, "Flex": "R", "Butt_Frequency": 250, "Tip_Frequency": 240, "Availability": "2", "Description": 1, "ShaftType": "Hybrid", "Tier": "2"}, {"Manufacturer": "Fujikura", "Model": "Ventus Blue 85 Hybrid", "Type": "Hybrid", "Weight": 85, "Flex": "S", "Butt_Frequency": 250, "Tip_Frequency": 257, "Availability": "3", "Description": 1, "ShaftType": "Hybrid", "Tier": "3"}, {"Manufacturer": "Project X", "Model": "HZRDUS Gen 5 Black Hybrid 90", "Type": "Hybrid", "Weight": 90, "Flex": "S", "Butt_Frequency": 254, "Tip_Frequency": 246, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Denali Frost Blue 80 Hybrid", "Type": "Hybrid", "Weight": 80, "Flex": "X", "Butt_Frequency": 255, "Tip_Frequency": 260, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD-DI 85 Hybrid", "Type": "Hybrid", "Weight": 85, "Flex": "S", "Butt_Frequency": 255, "Tip_Frequency": 262, "Availability": "2", "Description": 1, "ShaftType": "Hybrid", "Tier": "2"}, {"Manufacturer": "Fujikura", "Model": "Ventus Blue 85 Hybrid", "Type": "Hybrid", "Weight": 85, "Flex": "X", "Butt_Frequency": 255, "Tip_Frequency": 269, "Availability": "3", "Description": 1, "ShaftType": "Hybrid", "Tier": "3"}, {"Manufacturer": "KBS", "Model": "Tour Proto Hybrid ", "Type": "Hybrid", "Weight": 85, "Flex": "S", "Butt_Frequency": 258, "Tip_Frequency": 269, "Availability": "1", "Description": 1, "ShaftType": "Hybrid", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "HZRDUS Gen 5 Black Hybrid 90", "Type": "Hybrid", "Weight": 90, "Flex": "X", "Butt_Frequency": 259, "Tip_Frequency": 259, "Availability": "Stock", "Description": 1, "ShaftType": "Hybrid", "Tier": "Stock"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD-DI 85 Hybrid", "Type": "Hybrid", "Weight": 85, "Flex": "X", "Butt_Frequency": 268, "Tip_Frequency": 271, "Availability": "2", "Description": 1, "ShaftType": "Hybrid", "Tier": "2"}, {"Manufacturer": "KBS", "Model": "Tour Proto Hybrid ", "Type": "Hybrid", "Weight": 95, "Flex": "X", "Butt_Frequency": 274, "Tip_Frequency": 278, "Availability": "1", "Description": 1, "ShaftType": "Hybrid", "Tier": "1"}, {"Manufacturer": "True Temper", "Model": "Dynamic Gold 95 R300", "Type": "Steel", "Weight": 95, "Flex": "R", "Butt_Frequency": 267, "Tip_Frequency": 252, "Availability": "Stock", "Description": 1, "ShaftType": "Steel Iron", "Tier": "Stock"}, {"Manufacturer": "Accra", "Model": "iSteel Green 105", "Type": "Steel", "Weight": 105, "Flex": "R", "Butt_Frequency": 268, "Tip_Frequency": 278, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "True Temper", "Model": "Dynamic Gold 95 S300", "Type": "Steel", "Weight": 95, "Flex": "S", "Butt_Frequency": 270, "Tip_Frequency": 255, "Availability": "Stock", "Description": 1, "ShaftType": "Steel Iron", "Tier": "Stock"}, {"Manufacturer": "KBS", "Model": "S Taper Lite", "Type": "Steel", "Weight": 95, "Flex": "R", "Butt_Frequency": 270, "Tip_Frequency": 258, "Availability": "Stock", "Description": 1, "ShaftType": "Steel Iron", "Tier": "Stock"}, {"Manufacturer": "KBS", "Model": "C-Taper Lite 110", "Type": "Steel", "Weight": 110, "Flex": "S", "Butt_Frequency": 272, "Tip_Frequency": 285, "Availability": "Stock", "Description": 1, "ShaftType": "Steel Iron", "Tier": "Stock"}, {"Manufacturer": "Nippon", "Model": "Modus 105", "Type": "Steel", "Weight": 105, "Flex": "R", "Butt_Frequency": 275, "Tip_Frequency": 289, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "Accra", "Model": "iSteel Green 115", "Type": "Steel", "Weight": 115, "Flex": "S", "Butt_Frequency": 277, "Tip_Frequency": 292, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "Nippon", "Model": "NS Pro 950 GH ", "Type": "Steel", "Weight": 95, "Flex": "R", "Butt_Frequency": 282, "Tip_Frequency": 288, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "Nippon", "Model": "Modus 120", "Type": "Steel", "Weight": 120, "Flex": "S", "Butt_Frequency": 282, "Tip_Frequency": 304, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "KBS", "Model": "KBS Tour 110 ", "Type": "Steel", "Weight": 110, "Flex": "R", "Butt_Frequency": 284, "Tip_Frequency": 285, "Availability": "Stock", "Description": 1, "ShaftType": "Steel Iron", "Tier": "Stock"}, {"Manufacturer": "True Temper", "Model": "Dynamic Gold Mid 115 R300", "Type": "Steel", "Weight": 115, "Flex": "R", "Butt_Frequency": 285, "Tip_Frequency": 291, "Availability": "Stock", "Description": 1, "ShaftType": "Steel Iron", "Tier": "Stock"}, {"Manufacturer": "Nippon", "Model": "Modus 105", "Type": "Steel", "Weight": 105, "Flex": "S", "Butt_Frequency": 285, "Tip_Frequency": 294, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "Nippon", "Model": "NS Pro 950 GH ", "Type": "Steel", "Weight": 95, "Flex": "S", "Butt_Frequency": 288, "Tip_Frequency": 295, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "KBS", "Model": "S Taper Lite", "Type": "Steel", "Weight": 95, "Flex": "S", "Butt_Frequency": 288, "Tip_Frequency": 303, "Availability": "Stock", "Description": 1, "ShaftType": "Steel Iron", "Tier": "Stock"}, {"Manufacturer": "KBS", "Model": "KBS Tour 120 ", "Type": "Steel", "Weight": 120, "Flex": "S", "Butt_Frequency": 290, "Tip_Frequency": 292, "Availability": "Stock", "Description": 1, "ShaftType": "Steel Iron", "Tier": "Stock"}, {"Manufacturer": "True Temper", "Model": "Dynamic Gold Mid 115 S300", "Type": "Steel", "Weight": 115, "Flex": "S", "Butt_Frequency": 290, "Tip_Frequency": 294, "Availability": "Stock", "Description": 1, "ShaftType": "Steel Iron", "Tier": "Stock"}, {"Manufacturer": "Nippon", "Model": "Modus 120", "Type": "Steel", "Weight": 120, "Flex": "X", "Butt_Frequency": 291, "Tip_Frequency": 308, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "Project X LZ", "Type": "Steel", "Weight": 120, "Flex": "S", "Butt_Frequency": 295, "Tip_Frequency": 312, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "True Temper", "Model": "Dynamic Gold Mid 115 X100", "Type": "Steel", "Weight": 115, "Flex": "X", "Butt_Frequency": 296, "Tip_Frequency": 300, "Availability": "Stock", "Description": 1, "ShaftType": "Steel Iron", "Tier": "Stock"}, {"Manufacturer": "True Temper", "Model": "Dynamic Gold 120 ", "Type": "Steel", "Weight": 120, "Flex": "S", "Butt_Frequency": 300, "Tip_Frequency": 312, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "KBS", "Model": "C-Taper 120 ", "Type": "Steel", "Weight": 120, "Flex": "S", "Butt_Frequency": 300, "Tip_Frequency": 327, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "True Temper", "Model": "Dynamic Gold 120 ", "Type": "Steel", "Weight": 120, "Flex": "X", "Butt_Frequency": 302, "Tip_Frequency": 320, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "Accra", "Model": "iSteel Green 125", "Type": "Steel", "Weight": 125, "Flex": "X", "Butt_Frequency": 302, "Tip_Frequency": 322, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "KBS", "Model": "KBS Tour 130 ", "Type": "Steel", "Weight": 130, "Flex": "X", "Butt_Frequency": 305, "Tip_Frequency": 313, "Availability": "Stock", "Description": 1, "ShaftType": "Steel Iron", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Project X LZ", "Type": "Steel", "Weight": 125, "Flex": "X", "Butt_Frequency": 306, "Tip_Frequency": 322, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "Project X Rifle", "Type": "Steel", "Weight": 125, "Flex": "X", "Butt_Frequency": 310, "Tip_Frequency": 326, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "True Temper", "Model": "Dynamic Gold X100", "Type": "Steel", "Weight": 130, "Flex": "X", "Butt_Frequency": 311, "Tip_Frequency": 330, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "KBS", "Model": "C-taper 130 ", "Type": "Steel", "Weight": 130, "Flex": "X", "Butt_Frequency": 312, "Tip_Frequency": 332, "Availability": "1", "Description": 1, "ShaftType": "Steel Iron", "Tier": "1"}, {"Manufacturer": "Mitsubishi", "Model": "Grand Bassara 29", "Type": "Wood", "Weight": 29, "Flex": "L", "Butt_Frequency": 176, "Tip_Frequency": 157, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 40", "Type": "Wood", "Weight": 40, "Flex": "L", "Butt_Frequency": 191, "Tip_Frequency": 182, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Sakura 40", "Type": "Wood", "Weight": 40, "Flex": "L", "Butt_Frequency": 195, "Tip_Frequency": 185, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "Denali Frost Red 40", "Type": "Wood", "Weight": 40, "Flex": "L", "Butt_Frequency": 200, "Tip_Frequency": 185, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD GC 4", "Type": "Wood", "Weight": 40, "Flex": "A", "Butt_Frequency": 200, "Tip_Frequency": 194, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD FI 4", "Type": "Wood", "Weight": 40, "Flex": "A", "Butt_Frequency": 200, "Tip_Frequency": 199, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 40", "Type": "Wood", "Weight": 40, "Flex": "A", "Butt_Frequency": 201, "Tip_Frequency": 189, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Ventus Blue Velocore + 5", "Type": "Wood", "Weight": 50, "Flex": "A", "Butt_Frequency": 208, "Tip_Frequency": 205, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 50", "Type": "Wood", "Weight": 50, "Flex": "A", "Butt_Frequency": 211, "Tip_Frequency": 184, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 40", "Type": "Wood", "Weight": 40, "Flex": "R", "Butt_Frequency": 211, "Tip_Frequency": 194, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD GC 5", "Type": "Wood", "Weight": 50, "Flex": "R", "Butt_Frequency": 211, "Tip_Frequency": 195, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Project X", "Model": "Denali Frost Red 50", "Type": "Wood", "Weight": 50, "Flex": "A", "Butt_Frequency": 211, "Tip_Frequency": 197, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Pro Blue 50", "Type": "Wood", "Weight": 50, "Flex": "A", "Butt_Frequency": 213, "Tip_Frequency": 197, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Fujikura", "Model": "Ventus Red Velocore + 5", "Type": "Wood", "Weight": 50, "Flex": "A", "Butt_Frequency": 213, "Tip_Frequency": 200, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Project X", "Model": "Denali Frost Blue 50", "Type": "Wood", "Weight": 50, "Flex": "A", "Butt_Frequency": 215, "Tip_Frequency": 199, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 50", "Type": "Wood", "Weight": 50, "Flex": "R", "Butt_Frequency": 216, "Tip_Frequency": 189, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD IZ 5", "Type": "Wood", "Weight": 50, "Flex": "A", "Butt_Frequency": 216, "Tip_Frequency": 194, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "UST", "Model": "LIN-Q Blue CB 55", "Type": "Wood", "Weight": 55, "Flex": "A", "Butt_Frequency": 217, "Tip_Frequency": 188, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Fujikura", "Model": "Ventus Blue Velocore + 5", "Type": "Wood", "Weight": 50, "Flex": "R", "Butt_Frequency": 217, "Tip_Frequency": 211, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Project X", "Model": "Cypher 2.0 50", "Type": "Wood", "Weight": 50, "Flex": "S", "Butt_Frequency": 223, "Tip_Frequency": 204, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Pro Blue 50", "Type": "Wood", "Weight": 50, "Flex": "R", "Butt_Frequency": 224, "Tip_Frequency": 208, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Fujikura", "Model": "Ventus Blue Velocore + 5", "Type": "Wood", "Weight": 50, "Flex": "S", "Butt_Frequency": 230, "Tip_Frequency": 216, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD FI 5", "Type": "Wood", "Weight": 50, "Flex": "R", "Butt_Frequency": 225, "Tip_Frequency": 211, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD IZ 5", "Type": "Wood", "Weight": 50, "Flex": "R", "Butt_Frequency": 226, "Tip_Frequency": 204, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "UST", "Model": "LIN-Q Blue CB 55", "Type": "Wood", "Weight": 55, "Flex": "R", "Butt_Frequency": 227, "Tip_Frequency": 197, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "Denali Frost Blue 50", "Type": "Wood", "Weight": 50, "Flex": "R", "Butt_Frequency": 227, "Tip_Frequency": 204, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Pro Blue 60", "Type": "Wood", "Weight": 60, "Flex": "R", "Butt_Frequency": 227, "Tip_Frequency": 208, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Fujikura", "Model": "Ventus Blue Velocore + 6", "Type": "Wood", "Weight": 60, "Flex": "R", "Butt_Frequency": 224, "Tip_Frequency": 214, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Mitsubishi", "Model": "Kai'li Blue 60", "Type": "Wood", "Weight": 60, "Flex": "R", "Butt_Frequency": 228, "Tip_Frequency": 209, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Ventus Red Velocore + 5", "Type": "Wood", "Weight": 50, "Flex": "R", "Butt_Frequency": 229, "Tip_Frequency": 207, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Project X", "Model": "Denali Frost Blue 60", "Type": "Wood", "Weight": 60, "Flex": "R", "Butt_Frequency": 230, "Tip_Frequency": 199, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Denali Frost Red 50", "Type": "Wood", "Weight": 50, "Flex": "R", "Butt_Frequency": 230, "Tip_Frequency": 208, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Denali Frost Red 60", "Type": "Wood", "Weight": 60, "Flex": "R", "Butt_Frequency": 230, "Tip_Frequency": 210, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "KBS", "Model": "PGW 50", "Type": "Wood", "Weight": 50, "Flex": "R", "Butt_Frequency": 230, "Tip_Frequency": 215, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "UST", "Model": "LIN-Q Blue CB 65", "Type": "Wood", "Weight": 65, "Flex": "R", "Butt_Frequency": 231, "Tip_Frequency": 200, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Fujikura", "Model": "Pro Blue 60", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 231, "Tip_Frequency": 217, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "KBS", "Model": "PGW 60", "Type": "Wood", "Weight": 60, "Flex": "R", "Butt_Frequency": 233, "Tip_Frequency": 215, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Fujikura", "Model": "Ventus Blue Velocore + 6", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 233, "Tip_Frequency": 219, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Mitsubishi", "Model": "Kai'li Blue 70", "Type": "Wood", "Weight": 70, "Flex": "S", "Butt_Frequency": 235, "Tip_Frequency": 203, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "HZRDUS Gen 5 Black 70", "Type": "Wood", "Weight": 70, "Flex": "S", "Butt_Frequency": 235, "Tip_Frequency": 210, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Pro Blue 70", "Type": "Wood", "Weight": 70, "Flex": "S", "Butt_Frequency": 235, "Tip_Frequency": 212, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Fujikura", "Model": "Ventus Red Velocore + 5", "Type": "Wood", "Weight": 50, "Flex": "S", "Butt_Frequency": 237, "Tip_Frequency": 213, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Project X", "Model": "Denali Frost Red 50", "Type": "Wood", "Weight": 50, "Flex": "S", "Butt_Frequency": 237, "Tip_Frequency": 214, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Pro Blue 60", "Type": "Wood", "Weight": 60, "Flex": "X", "Butt_Frequency": 237, "Tip_Frequency": 218, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Mitsubishi", "Model": "Kai'li Blue 60", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 239, "Tip_Frequency": 211, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "Denali Frost Blue 50", "Type": "Wood", "Weight": 50, "Flex": "S", "Butt_Frequency": 240, "Tip_Frequency": 210, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD GC 5", "Type": "Wood", "Weight": 50, "Flex": "S", "Butt_Frequency": 240, "Tip_Frequency": 212, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Project X", "Model": "Denali Frost Blue 60", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 240, "Tip_Frequency": 213, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Ventus Red Velocore + 6", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 240, "Tip_Frequency": 215, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Project X", "Model": "Denali Frost Red 60", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 240, "Tip_Frequency": 216, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Ventus Blue Velocore + 7", "Type": "Wood", "Weight": 70, "Flex": "S", "Butt_Frequency": 240, "Tip_Frequency": 219, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Project X", "Model": "HZRDUS Gen 5 Black 60", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 241, "Tip_Frequency": 214, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "UST", "Model": "LIN-Q White 75", "Type": "Wood", "Weight": 75, "Flex": "S", "Butt_Frequency": 242, "Tip_Frequency": 210, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "HZRDUS Gen 5 Black 70", "Type": "Wood", "Weight": 70, "Flex": "X", "Butt_Frequency": 242, "Tip_Frequency": 216, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "KBS", "Model": "PGW 60", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 242, "Tip_Frequency": 221, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Fujikura", "Model": "Ventus Black Velocore + 6", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 242, "Tip_Frequency": 228, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Fujikura", "Model": "Pro Blue 70", "Type": "Wood", "Weight": 70, "Flex": "X", "Butt_Frequency": 243, "Tip_Frequency": 218, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD VF 5", "Type": "Wood", "Weight": 50, "Flex": "S", "Butt_Frequency": 243, "Tip_Frequency": 219, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "KBS", "Model": "PGW 70", "Type": "Wood", "Weight": 70, "Flex": "S", "Butt_Frequency": 244, "Tip_Frequency": 217, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "HZRDUS Gen 5 Black 60", "Type": "Wood", "Weight": 60, "Flex": "X", "Butt_Frequency": 245, "Tip_Frequency": 216, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Project X", "Model": "HZRDUS Gen 5 Black 80", "Type": "Wood", "Weight": 80, "Flex": "X", "Butt_Frequency": 245, "Tip_Frequency": 217, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Fujikura", "Model": "Ventus Blue Velocore + 6", "Type": "Wood", "Weight": 60, "Flex": "X", "Butt_Frequency": 245, "Tip_Frequency": 224, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "UST", "Model": "LIN-Q White 65", "Type": "Wood", "Weight": 65, "Flex": "S", "Butt_Frequency": 246, "Tip_Frequency": 211, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Mitsubishi", "Model": "Kai'li Blue 70", "Type": "Wood", "Weight": 70, "Flex": "X", "Butt_Frequency": 250, "Tip_Frequency": 210, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD VF 6", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 248, "Tip_Frequency": 223, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Fujikura", "Model": "Ventus Blue Velocore + 7", "Type": "Wood", "Weight": 70, "Flex": "X", "Butt_Frequency": 250, "Tip_Frequency": 224, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD VF 7", "Type": "Wood", "Weight": 70, "Flex": "S", "Butt_Frequency": 248, "Tip_Frequency": 225, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Fujikura", "Model": "Ventus Black Velocore + 7", "Type": "Wood", "Weight": 70, "Flex": "S", "Butt_Frequency": 249, "Tip_Frequency": 227, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD FI 6", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 250, "Tip_Frequency": 217, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Fujikura", "Model": "Ventus Black Velocore + 6", "Type": "Wood", "Weight": 60, "Flex": "X", "Butt_Frequency": 250, "Tip_Frequency": 232, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "KBS", "Model": "PGW 60", "Type": "Wood", "Weight": 60, "Flex": "X", "Butt_Frequency": 251, "Tip_Frequency": 222, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Project X", "Model": "Denali Frost Blue 60", "Type": "Wood", "Weight": 60, "Flex": "X", "Butt_Frequency": 252, "Tip_Frequency": 218, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD GC 6", "Type": "Wood", "Weight": 60, "Flex": "S", "Butt_Frequency": 253, "Tip_Frequency": 214, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Project X", "Model": "Denali Frost Blue 70", "Type": "Wood", "Weight": 70, "Flex": "X", "Butt_Frequency": 253, "Tip_Frequency": 218, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "UST", "Model": "LIN-Q White 65", "Type": "Wood", "Weight": 65, "Flex": "X", "Butt_Frequency": 254, "Tip_Frequency": 215, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "KBS", "Model": "PGW 70", "Type": "Wood", "Weight": 70, "Flex": "X", "Butt_Frequency": 254, "Tip_Frequency": 217, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Mitsubishi", "Model": "Kai'li Blue 60", "Type": "Wood", "Weight": 60, "Flex": "X", "Butt_Frequency": 256, "Tip_Frequency": 217, "Availability": "Stock", "Description": 1, "ShaftType": "Wood", "Tier": "Stock"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD FI 7", "Type": "Wood", "Weight": 70, "Flex": "S", "Butt_Frequency": 256, "Tip_Frequency": 218, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD VF 6", "Type": "Wood", "Weight": 60, "Flex": "X", "Butt_Frequency": 256, "Tip_Frequency": 225, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "UST", "Model": "LIN-Q White 75", "Type": "Wood", "Weight": 75, "Flex": "X", "Butt_Frequency": 257, "Tip_Frequency": 216, "Availability": "1", "Description": 1, "ShaftType": "Wood", "Tier": "1"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD FI 6", "Type": "Wood", "Weight": 60, "Flex": "X", "Butt_Frequency": 257, "Tip_Frequency": 221, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD VF 7", "Type": "Wood", "Weight": 70, "Flex": "X", "Butt_Frequency": 260, "Tip_Frequency": 229, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}, {"Manufacturer": "Fujikura", "Model": "Ventus Black Velocore + 7", "Type": "Wood", "Weight": 70, "Flex": "X", "Butt_Frequency": 260, "Tip_Frequency": 236, "Availability": "3", "Description": 1, "ShaftType": "Wood", "Tier": "3"}, {"Manufacturer": "Graphite Design", "Model": "Tour AD FI 7", "Type": "Wood", "Weight": 70, "Flex": "X", "Butt_Frequency": 265, "Tip_Frequency": 221, "Availability": "2", "Description": 1, "ShaftType": "Wood", "Tier": "2"}];
+
+const tiers=[...new Set(data.map(d=>String(d.Tier)).filter(v=>v&&v!=="null"))].sort();
+const tierEl=document.getElementById('tier');
+tierEl.innerHTML='<option>All</option>'+tiers.map(v=>`<option>${v}</option>`).join('');
+
+const weightSlider=document.getElementById('weightSlider');
+noUiSlider.create(weightSlider,{
+  start:[30,150],
+  connect:true,
+  range:{min:30,max:150},
+  step:1
+});
+
+// Compute axis ranges from the full dataset with padding
+const allButt = data.map(d=>d.Butt_Frequency);
+const allTip  = data.map(d=>d.Tip_Frequency);
+const pad = 5;
+const xRangeFull = [Math.min(...allButt)-pad, Math.max(...allButt)+pad];
+const yRangeFull = [Math.min(...allTip)-pad,  Math.max(...allTip)+pad];
+
+// Linear regression — recalculated each draw from filtered dataset
+function linReg(xs, ys) {
+  const n = xs.length;
+  if(n < 2) return null;
+  const mx = xs.reduce((a,b)=>a+b,0)/n;
+  const my = ys.reduce((a,b)=>a+b,0)/n;
+  const num = xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my),0);
+  const den = xs.reduce((s,x)=>s+(x-mx)**2,0);
+  if(den === 0) return null;
+  const m = num/den, b = my - m*mx;
+  return {m, b};
+}
+
+let showTrendline = false;
+
+function toggleTrendline() {
+  showTrendline = !showTrendline;
+  const btn = document.getElementById('trendlineToggle');
+  btn.textContent = showTrendline ? 'Hide Trendline' : 'Show Trendline';
+  btn.classList.toggle('active', showTrendline);
+  draw();
+}
+
+function axisRangeFor(filteredData, lockAxes){
+  // lockAxes=true means no shaft type selected → stay on full range
+  // lockAxes=false means shaft type selected → autoscale to that group
+  if(lockAxes) return {x: xRangeFull, y: yRangeFull};
+  const bx = filteredData.map(d=>d.Butt_Frequency);
+  const ty = filteredData.map(d=>d.Tip_Frequency);
+  if(!bx.length) return {x: xRangeFull, y: yRangeFull};
+  return {
+    x: [Math.min(...bx)-pad, Math.max(...bx)+pad],
+    y: [Math.min(...ty)-pad, Math.max(...ty)+pad]
+  };
+}
+
+function draw(){
+  const s=document.getElementById('search').value.toLowerCase().trim();
+  const t=document.getElementById('type').value;
+  const f=document.getElementById('flex').value;
+  const tr=document.getElementById('tier').value;
+  const w=weightSlider.noUiSlider.get().map(v=>parseInt(v));
+  document.getElementById('weightLabel').innerText=`${w[0]} – ${w[1]} g`;
+
+  // Autoscale to shaft type group only; lock axes if no type selected or any other filter is active
+  const typeFiltered = t === 'All' ? data : data.filter(d=>
+    t==='Iron' ? d.ShaftType.includes('Iron') : d.ShaftType===t
+  );
+  const lockAxes = t === 'All';
+
+  const filtered=data.filter(d=>
+    (t==='All'||(t==='Iron'?d.ShaftType.includes('Iron'):d.ShaftType===t))&&
+    (f==='All'||String(d.Flex)===f)&&
+    (tr==='All'||String(d.Tier)===tr)&&
+    (+d.Weight>=w[0]&&+d.Weight<=w[1])
+  );
+
+  const normal=filtered.filter(d=>!(s&&(String(d.Manufacturer)+' '+String(d.Model)).toLowerCase().includes(s)));
+  const hit=filtered.filter(d=>s&&(String(d.Manufacturer)+' '+String(d.Model)).toLowerCase().includes(s));
+
+  // Scale to the full type group, not just the sub-filtered set
+  const ranges = axisRangeFor(typeFiltered, lockAxes);
+
+  const traces = [
+    {
+      x:normal.map(r=>r.Butt_Frequency),
+      y:normal.map(r=>r.Tip_Frequency),
+      mode:'markers',type:'scatter',
+      marker:{size:9,color:'#5a6070',line:{color:'#9098a8',width:1},opacity:0.85},
+      customdata:normal.map(r=>[r.Manufacturer,r.Model,r.Flex,r.Weight,r.ShaftType]),
+      hovertemplate:'<b>%{customdata[0]} %{customdata[1]}</b><br>Type: %{customdata[4]}<br>Flex: %{customdata[2]} &nbsp;|&nbsp; Weight: %{customdata[3]}g<extra></extra>'
+    },
+    {
+      x:hit.map(r=>r.Butt_Frequency),
+      y:hit.map(r=>r.Tip_Frequency),
+      mode:'markers',type:'scatter',
+      marker:{size:14,color:'#c8102e',line:{color:'#ff6070',width:2}},
+      customdata:hit.map(r=>[r.Manufacturer,r.Model,r.Flex,r.Weight,r.ShaftType]),
+      hovertemplate:'<b>%{customdata[0]} %{customdata[1]}</b><br>Type: %{customdata[4]}<br>Flex: %{customdata[2]} &nbsp;|&nbsp; Weight: %{customdata[3]}g<extra></extra>'
+    }
+  ];
+
+  if(showTrendline) {
+    const trendData = filtered.length >= 2 ? filtered : data;
+    const xs = trendData.map(d=>d.Butt_Frequency);
+    const ys = trendData.map(d=>d.Tip_Frequency);
+    const reg = linReg(xs, ys);
+    if(reg) {
+      const txMin = Math.min(...xs) - pad;
+      const txMax = Math.max(...xs) + pad;
+      traces.push({
+        x: [txMin, txMax],
+        y: [reg.m*txMin + reg.b, reg.m*txMax + reg.b],
+        mode: 'lines', type: 'scatter',
+        line: { color: '#c8102e', width: 2, dash: 'dot' },
+        hoverinfo: 'skip'
+      });
+    }
+  }
+
+  Plotly.newPlot('plot', traces, {
+    paper_bgcolor:'#111114',
+    plot_bgcolor:'#0d0d10',
+    font:{color:'#b8bcc8', family:"'Inter', sans-serif", size:12},
+    showlegend:false,
+    margin:{t:24,r:24,b:56,l:64},
+    xaxis:{
+      title:{text:'Overall Stiffness', font:{size:12,color:'#7a7a8a'}},
+      range: ranges.x,
+      gridcolor:'#1e1e24',
+      linecolor:'#2a2a32',
+      tickcolor:'#2a2a32',
+      zerolinecolor:'#2a2a32'
+    },
+    yaxis:{
+      title:{text:'Tip Stiffness', font:{size:12,color:'#7a7a8a'}},
+      range: ranges.y,
+      gridcolor:'#1e1e24',
+      linecolor:'#2a2a32',
+      tickcolor:'#2a2a32',
+      zerolinecolor:'#2a2a32'
+    },
+    hoverlabel:{
+      bgcolor:'#1a1a20',
+      bordercolor:'#3a3a45',
+      font:{color:'#e8e8f0', size:13}
+    }
+  },{displayModeBar:false,responsive:true});
+}
+
+['search','type','flex','tier'].forEach(id=>document.getElementById(id).addEventListener('input',draw));
+weightSlider.noUiSlider.on('update',draw);
+draw();
+</script>
+</body>
+</html>
